@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  name            String
+  email           String   @unique
+  password        String
+  role            String
+  bio             String?
+  profilePicture  String?
+  isApproved      Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  startups                    Startup[]           @relation("FounderStartups")
+  mentorshipRequestsAsMentor  MentorshipRequest[] @relation("MentorRequests")
+  mentorshipRequestsAsFounder MentorshipRequest[] @relation("FounderRequests")
+  evaluations                 Evaluation[]
+  milestones                  Milestone[]
+  meetingsAsInvestor          Meeting[]           @relation("InvestorMeetings")
+  meetingsAsFounder           Meeting[]           @relation("FounderMeetings")
+  sentMessages                Message[]           @relation("SentMessages")
+  receivedMessages            Message[]           @relation("ReceivedMessages")
+  notifications               Notification[]
+  auditLogs                   AuditLog[]
+}
+
+model Startup {
+  id            String   @id @default(cuid())
+  name          String
+  description   String
+  industry      String
+  fundingStage  String
+  category      String?
+  location      String?
+  website       String?
+  pitchDeckUrl  String?
+  pitchDeckName String?
+  status        String   @default("PENDING")
+  founderId     String
+  founder       User     @relation("FounderStartups", fields: [founderId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  statusHistory StatusHistory[]
+  evaluations   Evaluation[]
+  mentorships   MentorshipRequest[]
+  milestones    Milestone[]
+  meetings      Meeting[]
+}
+
+model StatusHistory {
+  id        String   @id @default(cuid())
+  status    String
+  note      String?
+  startupId String
+  startup   Startup  @relation(fields: [startupId], references: [id])
+  changedAt DateTime @default(now())
+}
+
+model Evaluation {
+  id         String   @id @default(cuid())
+  rating     Int
+  comments   String
+  startupId  String
+  startup    Startup  @relation(fields: [startupId], references: [id])
+  reviewerId String
+  reviewer   User     @relation(fields: [reviewerId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model MentorshipRequest {
+  id        String   @id @default(cuid())
+  status    String   @default("PENDING")
+  message   String?
+  startupId String
+  startup   Startup  @relation(fields: [startupId], references: [id])
+  mentorId  String
+  mentor    User     @relation("MentorRequests", fields: [mentorId], references: [id])
+  founderId String
+  founder   User     @relation("FounderRequests", fields: [founderId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Milestone {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  dueDate     DateTime
+  status      String   @default("NOT_STARTED")
+  priority    String   @default("MEDIUM")
+  startupId   String
+  startup     Startup  @relation(fields: [startupId], references: [id])
+  mentorId    String
+  mentor      User     @relation(fields: [mentorId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Meeting {
+  id          String   @id @default(cuid())
+  title       String
+  scheduledAt DateTime
+  duration    Int      @default(30)
+  confirmed   Boolean  @default(false)
+  notes       String?
+  investorId  String
+  investor    User     @relation("InvestorMeetings", fields: [investorId], references: [id])
+  founderId   String
+  founder     User     @relation("FounderMeetings", fields: [founderId], references: [id])
+  startupId   String
+  startup     Startup  @relation(fields: [startupId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  content    String
+  senderId   String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId String
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  details   String
+  adminId   String
+  admin     User     @relation(fields: [adminId], references: [id])
+  createdAt DateTime @default(now())
+}
