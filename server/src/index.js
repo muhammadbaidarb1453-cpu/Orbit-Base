@@ -15,12 +15,14 @@ const meetingRoutes = require('./routes/meetings');
 
 const app = express();
 
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true,
-}));
+const clientUrl = (process.env.CLIENT_URL || 'http://localhost:5173').trim();
+
+app.use(cors({ origin: clientUrl, credentials: true }));
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+if (!process.env.VERCEL) {
+  app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+}
 
 app.use('/api/auth', authRoutes);
 app.use('/api/startups', startupRoutes);
